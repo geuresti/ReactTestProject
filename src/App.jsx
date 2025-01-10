@@ -6,11 +6,20 @@ import Footer from './components/Footer'
 function App() {
   const [count, setCount] = useState(0)
 
+  const [showModal, setShowModal] = useState(false);
+
+  function handleToggleModal() {
+    setShowModal(!showModal);
+  }
+
+
   return (
     <>
-      <Sidebar/>
       <Main/>
-      <Footer/>
+      {showModal && (
+        <Sidebar handleToggleModal={handleToggleModal} /> 
+      )}
+      <Footer handleToggleModal={handleToggleModal} />
     </>
   )
 }
