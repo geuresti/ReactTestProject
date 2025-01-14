@@ -12,7 +12,7 @@ function App() {
 
   const [date, setDate] = useState(new Date());
 
-  const [showCalendar, setShowCalendar] = useState(true);
+  const [showCalendar, setShowCalendar] = useState(false);
 
   const [showModal, setShowModal] = useState(false);
 
@@ -22,50 +22,60 @@ function App() {
 
   function handleToggleCalendar() {
     setShowCalendar(!showCalendar);
-    console.log(showCalendar);
   }
 
   const handleDateChange = (date) => {
-    setDate(date);
-    console.log("DATE:", date);
+
+    // Check if the selected date is valid
+    if (date <= new Date()) {
+      setDate(date);
+    } else {
+      setDate(new Date());
+    }
   }
 
-  useEffect(() => {
-    async function fetchAPOD() {
+  async function updateAPOD(newDate) {
 
-      const NASA_KEY = import.meta.env.VITE_NASA_API_KEY
+    const NASA_KEY = import.meta.env.VITE_NASA_API_KEY;
 
-      const url = "https://api.nasa.gov/planetary/apod?api_key=" + NASA_KEY;
+    // yyyy-mm-dd format
+    const year = newDate.getFullYear();
+    const month = newDate.getMonth() + 1; 
+    const day = newDate.getDate();
+    const formattedDate = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
 
-      const today = (new Date()).toDateString();
-      const localKey = `NASA-${today}`;
+    const url = "https://api.nasa.gov/planetary/apod?api_key=" + NASA_KEY + "&date=" + formattedDate;
 
+    console.log("Updating APOD to:", formattedDate);
 
-      console.log("fart nutszzz");
-      // Check if api data for today has been stored locally
- /*     if (localStorage.getItem(localKey)) {
-        const apiData = JSON.parse(localStorage.getItem(localKey));
-        setData(apiData);
-        return
-      }*/
+    const localKey = `NASA-${newDate}`;
 
-      // If no data from today has been stored, clear cache
-    //  localStorage.clear();
-
-/*      try {
-        const response = await fetch(url);
-        const apiData = await response.json();
-
-        localStorage.setItem(localKey, JSON.stringify(apiData));
-        setData(apiData);
-        //console.log(apiData);
-      } catch (error) {
-        console.log(error);
-      }*/
-
+    // Check if api data for today has been stored locally
+    if (localStorage.getItem(localKey)) {
+      const apiData = JSON.parse(localStorage.getItem(localKey));
+      setData(apiData);
+      return
     }
 
-    fetchAPOD();
+    // If no data from today has been stored, clear cache
+    localStorage.clear();
+
+    // Send API request and store data in local storage
+    try {
+      const response = await fetch(url);
+      const apiData = await response.json();
+
+      localStorage.setItem(localKey, JSON.stringify(apiData));
+      setData(apiData);
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  // Whenever date is changed (user changes calendar)
+  useEffect(() => {
+    
+    updateAPOD(date)
 
   }, [date])
 
@@ -74,53 +84,19 @@ function App() {
   //   blank array = run code when page loads
   //   var in array = run code when var changes
   useEffect(() => {
-    async function fetchAPOD() {
 
-      const NASA_KEY = import.meta.env.VITE_NASA_API_KEY
-
-      const url = "https://api.nasa.gov/planetary/apod?api_key=" + NASA_KEY;
-
-      const today = (new Date()).toDateString();
-      const localKey = `NASA-${today}`;
-
-      // Check if api data for today has been stored locally
-      if (localStorage.getItem(localKey)) {
-        const apiData = JSON.parse(localStorage.getItem(localKey));
-        setData(apiData);
-        return
-      }
-
-      // If no data from today has been stored, clear cache
-      localStorage.clear();
-
-      // Send api request and store data in local storage
-      try {
-        const response = await fetch(url);
-        const apiData = await response.json();
-
-        localStorage.setItem(localKey, JSON.stringify(apiData));
-        setData(apiData);
-        //console.log(apiData);
-      } catch (error) {
-        console.log(error);
-      }
-
-    }
-
-    fetchAPOD();
+    updateAPOD(new Date());
 
   }, [])
 
-  // Conditional rendering
   return (
     <>
-
       {showCalendar && (<DatePicker
-        id="datePicker"
-        popperPlacement=""
-        selected={date}
-        onChange={handleDateChange}
-        dateFormat="yyyy-MM-dd"/>
+          id="datePicker"
+          selected={date}
+          onChange={handleDateChange}
+          dateFormat="yyyy-MM-dd"
+        />
       )}
 
       {data ? (<Main data={data} />) : (
@@ -129,12 +105,14 @@ function App() {
         </div>
       )}
 
-      {showModal && (
-        <Sidebar data={data} handleToggleModal={handleToggleModal} /> 
+      {showModal && (<Sidebar 
+          data={data} 
+          showModal={showModal}
+          handleToggleModal={handleToggleModal}/>
       )}
 
       {data && (
-        <Footer data={data} handleToggleModal={handleToggleModal} handleToggleCalendar={handleToggleCalendar} />
+        <Footer data={data} handleToggleModal={handleToggleModal} handleToggleCalendar={handleToggleCalendar} showCalendar={showCalendar}/>
       )}
 
     </>
